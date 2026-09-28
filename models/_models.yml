@@ -1,0 +1,34 @@
+version: 2
+models:
+  - name: serve_price_latest
+    description: Latest close and 5-day change per ticker. Built by ClickHouse on Athena-produced common tables read in place as Iceberg.
+    columns:
+      - {name: ticker, tests: [not_null, unique]}
+      - {name: exchange, tests: [not_null]}
+      - {name: company_name}
+      - {name: sector}
+      - {name: country}
+      - {name: last_trade_date, tests: [not_null]}
+      - {name: currency_code}
+      - {name: last_close}
+      - {name: last_close_usd}
+      - {name: last_volume}
+      - {name: change_5d}
+  - name: serve_exchange_daily_turnover
+    description: Daily USD turnover per exchange over the last ~90 trading days. Built by ClickHouse on Athena-produced common tables.
+    columns:
+      - {name: exchange, tests: [not_null]}
+      - {name: country}
+      - {name: currency_code}
+      - {name: trade_date, tests: [not_null]}
+      - {name: tickers_traded}
+      - {name: turnover_usd}
+  - name: serve_exchange_monthly
+    description: Monthly aggregates per exchange and currency. Built by ClickHouse on a Snowflake-produced mart (Snowflake-managed Iceberg) read in place.
+    columns:
+      - {name: exchange, tests: [not_null]}
+      - {name: currency_code, tests: [not_null]}
+      - {name: month_start, tests: [not_null]}
+      - {name: tickers}
+      - {name: avg_close_usd}
+      - {name: total_volume}

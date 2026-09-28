@@ -1,0 +1,40 @@
+# xengine-consumer-clickhouse — the realtime/serving team's dbt project on ClickHouse (the same instance that serves the CFD realtime tier).
+# Reads the producer's Glue-managed Iceberg tables and the analytics team's Snowflake-managed Iceberg mart IN PLACE (ClickHouse
+# iceberg() views created on-run-start from the S3 locations below); writes MergeTree serving tables to stock_consumer_ch_mesh.
+name: xengine_consumer_clickhouse
+version: "1.0.0"
+config-version: 2
+profile: xengine_consumer_clickhouse
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # S3 locations of the shared Iceberg tables (Glue: Table.StorageDescriptor.Location; Snowflake: SYSTEM$GET_ICEBERG_TABLE_INFORMATION).
+  # ClickHouse 23.8 takes the https bucket URL form and uses the instance role for credentials. Re-point here when a table is rebuilt.
+  iceberg_locations:
+    stock_common_mesh.common_price_daily: https://codepais3.s3.ap-southeast-2.amazonaws.com/stock/bronze/_xengine_mesh/stock_common_mesh/common_price_daily/e110ac52-695a-4735-a165-b500996eb449
+    stock_common_mesh.common_ticker:      https://codepais3.s3.ap-southeast-2.amazonaws.com/stock/bronze/_xengine_mesh/stock_common_mesh/common_ticker/4a015ffb-48a0-4a54-be82-416e093ce44b
+    stock_common_mesh.common_exchange:    https://codepais3.s3.ap-southeast-2.amazonaws.com/stock/bronze/_xengine_mesh/stock_common_mesh/common_exchange/48f88793-ef78-4a96-b5ff-1927c7dad620
+    # Snowflake-managed Iceberg (analytics team's mart): table root from SYSTEM$GET_ICEBERG_TABLE_INFORMATION. Snowflake writes
+    # upper-case column names; the view aliases them to the lower-case names the other engines see (and drops METADATA$ columns).
+    stock_consumer_mesh.mart_price_monthly_usd:
+      url: https://codepais3.s3.ap-southeast-2.amazonaws.com/stock/bronze/_dbt/STOCK_CONSUMER_MESH/mart_price_monthly_usd/_xengine_mesh_consumer.9pNVWtEs
+      columns: [ticker, exchange, company_name, sector, currency_code, month_start, trading_days, avg_close_usd, total_volume, month_end_close_usd, month_end_close_native]
+
+on-run-start:
+  - "{{ create_iceberg_source_views() }}"
+
+tests:
+  xengine_consumer_clickhouse:
+    +tags: ["cross_engine_mesh", "cross_engine", "role_consumer", "engine_clickhouse"]
+
+models:
+  xengine_consumer_clickhouse:
+    +tags: ["cross_engine_mesh", "cross_engine", "role_consumer", "engine_clickhouse"]
+    +materialized: table
+    +engine: MergeTree()
+    +settings: {allow_nullable_key: 1}      # Iceberg columns arrive Nullable; keys stay as the other engines name them
+    +meta: {engine: clickhouse, role: consumer}
