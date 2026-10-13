@@ -6,18 +6,18 @@ sources:
   - name: stock_common_ch           # PRODUCED BY ATHENA — ClickHouse is the 3rd consumer (Snowflake 1st, Databricks 2nd)
     database: stock_common_mesh
     schema: stock_common_mesh
-    meta: {engine: clickhouse, produced_by_engine: athena, physical_format: iceberg}
+    config: {meta: {engine: clickhouse, produced_by_engine: athena, physical_format: iceberg}}
     tables:
       - name: common_price_daily
-        meta: {physical_identity: "glue:stock_common_mesh.common_price_daily"}
+        config: {meta: {physical_identity: "glue:stock_common_mesh.common_price_daily"}}
       - name: common_ticker
-        meta: {physical_identity: "glue:stock_common_mesh.common_ticker"}
+        config: {meta: {physical_identity: "glue:stock_common_mesh.common_ticker"}}
       - name: common_exchange
-        meta: {physical_identity: "glue:stock_common_mesh.common_exchange"}
+        config: {meta: {physical_identity: "glue:stock_common_mesh.common_exchange"}}
   - name: stock_consumer_sf_ch      # PRODUCED BY SNOWFLAKE (Snowflake-managed Iceberg) — read directly from S3 by ClickHouse
     database: stock_consumer_mesh
     schema: stock_consumer_mesh
-    meta: {engine: clickhouse, produced_by_engine: snowflake, physical_format: iceberg}
+    config: {meta: {engine: clickhouse, produced_by_engine: snowflake, physical_format: iceberg}}
     tables:
       - name: mart_price_monthly_usd
-        meta: {physical_identity: "snowflake:datapai.stock_consumer_mesh.mart_price_monthly_usd"}
+        config: {meta: {physical_identity: "snowflake:datapai.stock_consumer_mesh.mart_price_monthly_usd"}}
